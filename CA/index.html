@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brocken Noise · CA</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="info">
+        <h1>CELLULAR AUTOMATA · ISOLATED SYSTEMS</h1>
+        <p>Rule: <span id="rule-display">110</span> · 
+           Speed: <span id="speed-display">5</span>fps · 
+           Population: <span id="population">0</span></p>
+        <div id="controls">
+            <button id="random-rule">↻ Random Rule</button>
+            <button id="reset">⟲ Reset</button>
+            <input type="range" id="speed" min="1" max="30" value="5">
+        </div>
+    </div>
+    
+    <div id="canvas-container"></div>
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.7/build/dat.gui.min.js"></script>
+    
+    <!-- Our modules -->
+    <script src="js/utils.js"></script>
+    <script src="js/automata.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
