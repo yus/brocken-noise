@@ -40,7 +40,7 @@ body {
     transform: translateX(-50%);
     background: rgba(10, 10, 20, 0.8);
     padding: 15px 25px;
-    border-radius: 40px;
+    border-radius: 2px;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 100, 50, 0.3);
     z-index: 100;
@@ -78,4 +78,97 @@ input[type=range] {
     color: rgba(255, 220, 180, 1);
     font-weight: bold;
     text-shadow: 0 0 8px rgba(255, 100, 50, 0.5);
+}
+/* ========== MOBILE STYLES ========== */
+/* Applies to screens smaller than 768px (phones, small tablets) */
+@media (max-width: 768px) {
+    /* Adjust info panel for small screens */
+    #info {
+        top: 10px;
+        left: 10px;
+        right: 10px; /* Use right to control width */
+        padding: 12px 15px;
+        font-size: 0.8rem;
+    }
+
+    #info h1 {
+        font-size: 1rem;
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+    }
+
+    /* Make the control bar mobile-friendly */
+    #controls {
+        flex-direction: column; /* Stack buttons vertically */
+        bottom: 20px;
+        left: 10px;
+        right: 10px;
+        width: auto;
+        transform: none; /* Remove the translateX transform */
+        padding: 15px;
+        gap: 12px;
+        border-radius: 2px; /* Keep your 2px round */
+        background: rgba(5, 5, 10, 0.9); /* Slightly darker for contrast */
+    }
+
+    /* Make buttons larger and full-width for easy tapping */
+    #controls button {
+        width: 100%;
+        padding: 15px 10px; /* Larger tap target */
+        font-size: 1rem;
+        margin: 0;
+        border-radius: 2px;
+        background: rgba(20, 20, 30, 0.8); /* Slight background for contrast */
+    }
+
+    /* Style the range slider container */
+    #controls input[type=range] {
+        width: 100%;
+        margin: 5px 0;
+        height: 30px; /* Larger touch area */
+    }
+
+    /* Optional: add labels for sliders on mobile if needed */
+    #speed-display {
+        display: inline-block;
+        margin-left: 5px;
+        font-weight: bold;
+    }
+
+    /* Improve text readability in stats */
+    #info p {
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin: 8px 0;
+    }
+
+    /* Ensure the canvas container fills the screen properly */
+    #canvas-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    /* Optional: add a subtle semi-transparent overlay behind text if contrast is low */
+    #info, #controls {
+        z-index: 10; /* Ensure controls are above canvas */
+    }
+}
+
+/* Extra small devices (phones < 480px) */
+@media (max-width: 480px) {
+    #info h1 {
+        font-size: 0.9rem;
+    }
+    
+    #info p {
+        font-size: 0.8rem;
+    }
+    
+    #controls {
+        padding: 12px;
+    }
 }
