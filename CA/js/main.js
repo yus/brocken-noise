@@ -778,6 +778,8 @@
         
                 // Update UI
                 populationDisplay.textContent = metrics.population;
+                // Inside the if block, after metrics = ca.step()
+                console.log('Population:', metrics.population, 'Generation:', ca.generation);
         
                 // Handle spectre notification
                 if (metrics.spectre && metrics.spectre.type !== 'none' && 
