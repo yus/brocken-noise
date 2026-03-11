@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Brocken Noise · CA</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -12,33 +12,27 @@
         <p>Rule: <span id="rule-display">110</span> · 
            Speed: <span id="speed-display">5</span>fps · 
            Population: <span id="population">0</span></p>
-        <div id="controls">
-            <div>
-                <button id="random-rule">↻ RANDOM RULE</button>
-                <button id="reset">⟲ RESET</button>
-            </div>
+    </div>
     
-            <div class="slider-container">
-                <label>SPEED: <span id="speed-display">5</span> FPS</label>
-                <input type="range" id="speed" min="1" max="30" value="5">
-            </div>
-    
-            <!-- Optional: Add rule display here too -->
-            <div style="text-align: center; font-size: 0.8rem; opacity: 0.6;">
-                RULE: <span id="rule-display-bottom">110</span>
-            </div>
+    <div id="controls">
+        <div>
+            <button id="random-rule">↻ RANDOM RULE</button>
+            <button id="reset">⟲ RESET</button>
+        </div>
+        <div class="slider-container">
+            <label>SPEED: <span id="speed-display-bottom">5</span> FPS</label>
+            <input type="range" id="speed" min="1" max="30" value="5">
+        </div>
+        <div style="text-align: center; font-size: 0.8rem; opacity: 0.6;">
+            RULE: <span id="rule-display-bottom">110</span>
         </div>
     </div>
     
-    <div id="canvas-container"></div>
+    <!-- Debug panel (hidden by default, tap 5 times to show) -->
+    <div id="debug-panel" style="display:none; position:absolute; top:100px; left:10px; background:rgba(0,0,0,0.9); color:#0f0; padding:15px; font-family:monospace; font-size:12px; z-index:1000; border-left:3px solid #f64; max-width:80%;"></div>
     
-    <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.7/build/dat.gui.min.js"></script>
+    <canvas id="webgl-canvas"></canvas>
     
-    <!-- Our modules -->
-    <script src="js/utils.js"></script>
-    <script src="js/automata.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
