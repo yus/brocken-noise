@@ -768,16 +768,17 @@
         }
         
         // Animation loop
+        // Animation loop
         function animate(now) {
             requestAnimationFrame(animate);
-            
+    
             if (now - lastUpdate > 1000 / targetFPS) {
                 const metrics = ca.step();
                 renderer.updateTexture(ca.grid, GRID_WIDTH, GRID_HEIGHT);
-                
+        
                 // Update UI
                 populationDisplay.textContent = metrics.population;
-                
+        
                 // Handle spectre notification
                 if (metrics.spectre && metrics.spectre.type !== 'none' && 
                     metrics.spectre.intensity > 0.6 && now - lastSpectreTime > 3000) {
