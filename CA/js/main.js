@@ -151,6 +151,8 @@ document.getElementById('speed').addEventListener('input', (e) => {
     targetFPS = parseInt(e.target.value);
     document.getElementById('speed-display').textContent = targetFPS;
 });
+// Add this after line where rule is updated
+document.getElementById('rule-display-bottom').textContent = newRule;
 
 // Handle resize
 window.addEventListener('resize', () => {
