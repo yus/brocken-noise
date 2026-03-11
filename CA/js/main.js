@@ -8,6 +8,37 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.getElementById('canvas-container').appendChild(renderer.domElement);
 
+// DEBUG ROLLUP - Add this temporarily
+console.log('🔍 DEBUG MODE ON');
+console.log('Three.js version:', THREE.REVISION);
+
+// Check WebGL context
+const gl = renderer.getContext();
+console.log('WebGL Context:', gl ? '✅' : '❌');
+console.log('WebGL Renderer:', gl.getParameter(gl.RENDERER));
+console.log('WebGL Vendor:', gl.getParameter(gl.VENDOR));
+
+// Check CA initialization
+console.log('CA Grid size:', ca.width, 'x', ca.height);
+console.log('Initial grid sum:', ca.grid.reduce((a, b) => a + b, 0));
+
+// Check texture
+console.log('Data texture created:', material.uniforms.texture.value ? '✅' : '❌');
+console.log('Texture dimensions:', textureWidth, 'x', textureHeight);
+
+// Force an immediate update
+updateTexture();
+console.log('Texture data after update:', data.slice(0, 10)); // First 10 bytes
+
+// Override animate to log frame count
+let frameCount = 0;
+const originalAnimate = animate;
+animate = function(time) {
+    frameCount++;
+    if (frameCount % 60 === 0) console.log('Frames rendered:', frameCount);
+    originalAnimate(time);
+};
+
 // CA instance
 const ca = new CellularAutomata(128, 72); // 128x72 cells
 let metrics = { population: 0, loneliness: 0 };
