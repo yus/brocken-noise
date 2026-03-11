@@ -51,6 +51,9 @@
             this.log('❌ ERROR: ' + msg);
         }
     };
+    // At top of main.js, right after DEBUG.init();
+    DEBUG.log('🚀 MAIN.JS STARTED');
+    DEBUG.log('WebGL canvas found: ' + (document.getElementById('webgl-canvas') ? '✅' : '❌'));
     
     // ========== CELLULAR AUTOMATA ==========
     class CellularAutomata {
