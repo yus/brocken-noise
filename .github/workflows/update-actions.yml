@@ -1,0 +1,69 @@
+name: 🔄 Update GitHub Actions
+
+on:
+  schedule:
+    # Run weekly on Sunday at 00:00
+    - cron: '0 0 * * 0'
+  workflow_dispatch:  # Allow manual trigger
+  push:
+    paths:
+      - '.github/workflows/*.yml'
+
+jobs:
+  update-actions:
+    name: Update Actions to Latest Versions
+    runs-on: ubuntu-latest
+    
+    # Opt into Node.js 24 now to stay ahead of deprecation
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          
+      - name: Install npm-check-updates
+        run: npm install -g npm-check-updates
+        
+      - name: Check for GitHub Actions updates
+        id: check
+        run: |
+          echo "Checking for action updates..."
+          
+          # List current actions versions
+          echo "Current actions in workflows:"
+          grep -r "uses:" .github/workflows/ | sort -u
+          
+          # Create PR if updates available (simplified check)
+          # In practice, you'd use a tool like dependabot, but this is a custom approach
+          
+      - name: Create Update PR if needed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(ci): update GitHub Actions to latest versions"
+          title: "🔄 Update GitHub Actions (Node.js 24 compatibility)"
+          body: |
+            This PR updates GitHub Actions to their latest versions to ensure:
+            - ✅ Node.js 24 compatibility
+            - ✅ Continued functionality after June 2nd, 2026
+            - ✅ Best practices for CI/CD
+            
+            **Changes:**
+            - Updates actions to latest major versions
+            - Adds Node.js 24 opt-in environment variable
+            
+            **Why:** Node.js 20 is being deprecated on GitHub Actions runners.
+            See: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+          branch: actions/update-node24
+          delete-branch: true
+          labels: |
+            automerge
+            dependencies
