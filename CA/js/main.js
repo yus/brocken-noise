@@ -384,23 +384,34 @@
         updateTexture(data, width, height) {
             const gl = this.gl;
             if (!gl || !this.texture) return;
-            
+    
             gl.bindTexture(gl.TEXTURE_2D, this.texture);
-            
+    
             // Convert Uint8Array (0/1) to RGBA Uint8Array
             const rgbaData = new Uint8Array(width * height * 4);
+            let liveCount = 0;
+    
             for (let i = 0; i < width * height; i++) {
-                const value = data[i] * 255;
-                rgbaData[i*4] = value;
-                rgbaData[i*4+1] = value;
-                rgbaData[i*4+2] = value;
-                rgbaData[i*4+3] = 255;
+                const isAlive = data[i] === 1;
+                if (isAlive) liveCount++;
+        
+                // R channel: 255 for alive, 0 for dead
+                // G and B channels: unused but set consistently
+                rgbaData[i*4] = isAlive ? 255 : 0;      // R
+                rgbaData[i*4+1] = isAlive ? 200 : 0;    // G (slightly different for debugging)
+                rgbaData[i*4+2] = isAlive ? 100 : 0;    // B (slightly different)
+                rgbaData[i*4+3] = 255;                   // A
             }
-            
+    
+            // Log occasionally for debugging
+            if (this.debug.enabled && Math.random() < 0.01) {
+                this.debug.log(`Texture update: ${liveCount} live cells`);
+            }
+    
             gl.texImage2D(
-                gl.TEXTURE_2D, 0, gl.RGBA, 
-                width, height, 0, 
-                gl.RGBA, gl.UNSIGNED_BYTE, 
+                gl.TEXTURE_2D, 0, gl.RGBA,
+                width, height, 0,
+                gl.RGBA, gl.UNSIGNED_BYTE,
                 rgbaData
             );
         }
