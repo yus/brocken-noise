@@ -1,101 +1,88 @@
-// main.js - Complete rewrite with proper WebGL setup
+// ========== BROCKEN NOISE · PURE WEBGL CA ==========
+// Self-contained, no libraries, built-in debugger
+
 (function() {
     'use strict';
     
-    // ========== DEBUG CONSOLE ==========
-    console.log('🎯 BROCKEN NOISE · CA MODULE INITIALIZING');
-    console.log('Timestamp:', new Date().toISOString());
-    
-    // ========== CONFIGURATION ==========
-    const CONFIG = {
-        gridWidth: 128,
-        gridHeight: 72,
-        defaultRule: 110,
-        minFPS: 1,
-        maxFPS: 30,
-        defaultFPS: 5
+    // ========== DEBUG SYSTEM ==========
+    const DEBUG = {
+        enabled: false,
+        panel: document.getElementById('debug-panel'),
+        logs: [],
+        tapCount: 0,
+        lastTap: 0,
+        
+        init: function() {
+            // Secret: tap 5 times in 2 seconds to enable debug
+            document.addEventListener('touchend', (e) => {
+                const now = Date.now();
+                if (now - this.lastTap < 2000) {
+                    this.tapCount++;
+                } else {
+                    this.tapCount = 1;
+                }
+                this.lastTap = now;
+                
+                if (this.tapCount >= 5) {
+                    this.enabled = !this.enabled;
+                    this.panel.style.display = this.enabled ? 'block' : 'none';
+                    this.log('🔍 Debug mode ' + (this.enabled ? 'ENABLED' : 'DISABLED'));
+                    this.tapCount = 0;
+                }
+            });
+            
+            // Also allow ?debug=true in URL
+            if (window.location.search.includes('debug=true')) {
+                this.enabled = true;
+                this.panel.style.display = 'block';
+            }
+        },
+        
+        log: function(msg) {
+            console.log('[CA]', msg);
+            if (!this.enabled) return;
+            
+            this.logs.unshift('> ' + new Date().toLocaleTimeString() + ': ' + msg);
+            if (this.logs.length > 10) this.logs.pop();
+            this.panel.innerHTML = '<h4>🔍 DEBUG</h4>' + this.logs.join('<br>');
+        },
+        
+        error: function(msg) {
+            console.error('[CA]', msg);
+            if (!this.enabled) return;
+            this.log('❌ ERROR: ' + msg);
+        }
     };
     
-    // ========== THREE.JS SETUP WITH ERROR HANDLING ==========
-    let scene, camera, renderer, material, mesh, texture;
-    let gl;
-    
-    try {
-        // Scene
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000);
-        
-        // Camera (orthographic for 2D)
-        camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
-        camera.position.z = 1;
-        
-        // Renderer with fallback options
-        renderer = new THREE.WebGLRenderer({ 
-            antialias: true, 
-            alpha: false,
-            powerPreference: "high-performance"
-        });
-        
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap for performance
-        
-        // Get WebGL context for debugging
-        gl = renderer.getContext();
-        
-        console.log('✅ Three.js initialized');
-        console.log('📊 WebGL Info:', {
-            renderer: gl.getParameter(gl.RENDERER),
-            vendor: gl.getParameter(gl.VENDOR),
-            version: gl.getParameter(gl.VERSION),
-            shadingLanguageVersion: gl.getParameter(gl.SHADING_LANGUAGE_VERSION)
-        });
-        
-    } catch (e) {
-        console.error('❌ Failed to initialize WebGL:', e);
-        document.body.innerHTML += `
-            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); 
-                        background:rgba(0,0,0,0.9); color:#f64; padding:20px; border-left:3px solid #f64;
-                        font-family:monospace; z-index:1000;">
-                <h3>⚠️ WebGL Error</h3>
-                <p>${e.message}</p>
-                <p>Please try a different browser or device.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Append canvas to container
-    document.getElementById('canvas-container').appendChild(renderer.domElement);
-    
-    // ========== CELLULAR AUTOMATA IMPLEMENTATION ==========
+    // ========== CELLULAR AUTOMATA ==========
     class CellularAutomata {
         constructor(width, height) {
             this.width = width;
             this.height = height;
             this.grid = new Uint8Array(width * height);
             this.nextGrid = new Uint8Array(width * height);
-            this.rule = CONFIG.defaultRule;
+            this.rule = 110;
             this.generation = 0;
-            this.ruleBits = this.rule.toString(2).padStart(8, '0').split('').map(Number);
-            
-            console.log('🧬 CA Initialized:', { width, height, cells: width * height });
+            this.updateRuleBits();
             this.randomizeFirstRow();
         }
         
-        setRule(ruleNumber) {
-            this.rule = Math.min(255, Math.max(0, ruleNumber));
+        updateRuleBits() {
             this.ruleBits = this.rule.toString(2).padStart(8, '0').split('').map(Number);
-            console.log('📏 Rule set to:', this.rule);
+        }
+        
+        setRule(rule) {
+            this.rule = Math.min(255, Math.max(0, rule));
+            this.updateRuleBits();
         }
         
         getNewState(left, center, right) {
-            // Wolfram rule indexing: left, center, right as binary number
             const index = 7 - ((left << 2) | (center << 1) | right);
             return this.ruleBits[index];
         }
         
         step() {
-            // Shift all rows up (scrolling effect)
+            // Shift rows down (new at top)
             for (let y = this.height - 1; y > 0; y--) {
                 const currentRow = y * this.width;
                 const prevRow = (y - 1) * this.width;
@@ -104,13 +91,12 @@
                 }
             }
             
-            // Calculate new first row based on current first row
-            const firstRow = 0;
+            // Calculate new first row
             for (let x = 0; x < this.width; x++) {
-                const left = this.grid[firstRow + ((x - 1 + this.width) % this.width)];
-                const center = this.grid[firstRow + x];
-                const right = this.grid[firstRow + (x + 1) % this.width];
-                this.nextGrid[firstRow + x] = this.getNewState(left, center, right);
+                const left = this.grid[(x - 1 + this.width) % this.width];
+                const center = this.grid[x];
+                const right = this.grid[(x + 1) % this.width];
+                this.nextGrid[x] = this.getNewState(left, center, right);
             }
             
             // Swap grids
@@ -122,276 +108,387 @@
         
         calculateMetrics() {
             let population = 0;
-            let lonely = 0;
-            let totalDead = 0;
-            
-            for (let y = 0; y < this.height; y++) {
-                for (let x = 0; x < this.width; x++) {
-                    const idx = y * this.width + x;
-                    if (this.grid[idx] === 1) {
-                        population++;
-                    } else {
-                        totalDead++;
-                        // Check if dead cell has any live neighbors
-                        let hasLiveNeighbor = false;
-                        for (let dy = -1; dy <= 1; dy++) {
-                            for (let dx = -1; dx <= 1; dx++) {
-                                if (dx === 0 && dy === 0) continue;
-                                const nx = (x + dx + this.width) % this.width;
-                                const ny = (y + dy + this.height) % this.height;
-                                if (this.grid[ny * this.width + nx] === 1) {
-                                    hasLiveNeighbor = true;
-                                    break;
-                                }
-                            }
-                            if (hasLiveNeighbor) break;
-                        }
-                        if (!hasLiveNeighbor) lonely++;
-                    }
-                }
+            for (let i = 0; i < this.grid.length; i++) {
+                population += this.grid[i];
             }
-            
-            return {
-                population: population,
-                loneliness: totalDead > 0 ? lonely / totalDead : 0,
-                generation: this.generation
-            };
+            return { population, generation: this.generation };
         }
         
         randomizeFirstRow() {
-            // Random initial conditions for first row
+            // Clear all
+            for (let i = 0; i < this.grid.length; i++) {
+                this.grid[i] = 0;
+            }
+            // Random first row
             for (let x = 0; x < this.width; x++) {
                 this.grid[x] = Math.random() > 0.5 ? 1 : 0;
             }
-            // Clear rest
-            for (let i = this.width; i < this.grid.length; i++) {
-                this.grid[i] = 0;
-            }
-            console.log('🌱 First row randomized, population:', this.grid.slice(0, this.width).reduce((a, b) => a + b, 0));
         }
         
         reset() {
             this.generation = 0;
             this.randomizeFirstRow();
         }
+    }
+    
+    // ========== WEBGL RENDERER ==========
+    class WebGLRenderer {
+        constructor(canvas, width, height) {
+            this.canvas = canvas;
+            this.width = width;
+            this.height = height;
+            this.gl = null;
+            this.program = null;
+            this.texture = null;
+            this.debug = DEBUG;
+            
+            this.initWebGL();
+        }
         
-        getGridData() {
-            return this.grid;
+        initWebGL() {
+            // Try to get WebGL context
+            const canvas = this.canvas;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const gl = canvas.getContext('webgl2') || 
+                       canvas.getContext('webgl') || 
+                       canvas.getContext('experimental-webgl');
+            
+            if (!gl) {
+                this.debug.error('No WebGL context available');
+                this.showFallbackMessage();
+                return false;
+            }
+            
+            this.gl = gl;
+            this.debug.log('WebGL initialized: ' + 
+                (gl.getParameter(gl.VERSION)));
+            this.debug.log('Renderer: ' + gl.getParameter(gl.RENDERER));
+            
+            // Set viewport
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            
+            // Compile shaders
+            return this.initShaders();
+        }
+        
+        initShaders() {
+            const gl = this.gl;
+            
+            // Vertex shader - simple pass-through
+            const vsSource = `
+                attribute vec2 aPosition;
+                varying vec2 vTexCoord;
+                void main() {
+                    gl_Position = vec4(aPosition, 0.0, 1.0);
+                    vTexCoord = aPosition * 0.5 + 0.5;
+                }
+            `;
+            
+            // Fragment shader - renders CA with loneliness effect
+            const fsSource = `
+                precision mediump float;
+                uniform sampler2D uTexture;
+                uniform float uTime;
+                uniform float uLoneliness;
+                uniform vec2 uResolution;
+                varying vec2 vTexCoord;
+                
+                void main() {
+                    vec2 cellCoord = vTexCoord;
+                    vec4 cell = texture2D(uTexture, cellCoord);
+                    
+                    // Grid cell size
+                    vec2 gridSize = vec2(128.0, 72.0);
+                    vec2 gridPos = fract(cellCoord * gridSize);
+                    
+                    // Check if this is a grid line
+                    float gridLine = 0.0;
+                    if (gridPos.x < 0.02 || gridPos.y < 0.02) {
+                        gridLine = 0.3;
+                    }
+                    
+                    if (cell.r > 0.5) {
+                        // Live cell - warm orange
+                        float pulse = 0.8 + 0.2 * sin(uTime * 3.0 + cellCoord.x * 50.0);
+                        vec3 liveColor = vec3(1.0, 0.5, 0.2);
+                        gl_FragColor = vec4(liveColor * pulse, 1.0);
+                    } else {
+                        // Dead cell - cold blue/black
+                        float intensity = 0.1 + uLoneliness * 0.4;
+                        float flicker = 0.05 * sin(uTime * 5.0 + cellCoord.y * 30.0);
+                        vec3 deadColor = vec3(intensity + flicker, 0.0, 0.1);
+                        
+                        // Mix with grid lines
+                        if (gridLine > 0.0) {
+                            gl_FragColor = vec4(0.2, 0.1, 0.2, 1.0);
+                        } else {
+                            gl_FragColor = vec4(deadColor, 1.0);
+                        }
+                    }
+                }
+            `;
+            
+            // Compile vertex shader
+            const vs = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vs, vsSource);
+            gl.compileShader(vs);
+            
+            if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+                this.debug.error('Vertex shader compilation failed: ' + 
+                    gl.getShaderInfoLog(vs));
+                return false;
+            }
+            
+            // Compile fragment shader
+            const fs = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fs, fsSource);
+            gl.compileShader(fs);
+            
+            if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+                this.debug.error('Fragment shader compilation failed: ' + 
+                    gl.getShaderInfoLog(fs));
+                return false;
+            }
+            
+            // Link program
+            this.program = gl.createProgram();
+            gl.attachShader(this.program, vs);
+            gl.attachShader(this.program, fs);
+            gl.linkProgram(this.program);
+            
+            if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+                this.debug.error('Shader program linking failed: ' + 
+                    gl.getProgramInfoLog(this.program));
+                return false;
+            }
+            
+            gl.useProgram(this.program);
+            
+            // Set up geometry (full-screen quad)
+            const vertices = new Float32Array([
+                -1, -1, 1, -1, -1, 1,
+                -1, 1, 1, -1, 1, 1
+            ]);
+            
+            const vertexBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+            
+            const aPosition = gl.getAttribLocation(this.program, 'aPosition');
+            gl.enableVertexAttribArray(aPosition);
+            gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+            
+            // Create texture for CA data
+            this.texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, this.texture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            
+            // Get uniform locations
+            this.uTexture = gl.getUniformLocation(this.program, 'uTexture');
+            this.uTime = gl.getUniformLocation(this.program, 'uTime');
+            this.uLoneliness = gl.getUniformLocation(this.program, 'uLoneliness');
+            this.uResolution = gl.getUniformLocation(this.program, 'uResolution');
+            
+            // Set resolution uniform
+            gl.uniform2f(this.uResolution, canvas.width, canvas.height);
+            
+            this.debug.log('Shaders compiled successfully');
+            return true;
+        }
+        
+        updateTexture(data, width, height) {
+            const gl = this.gl;
+            if (!gl || !this.texture) return;
+            
+            gl.bindTexture(gl.TEXTURE_2D, this.texture);
+            
+            // Convert Uint8Array (0/1) to RGBA Uint8Array
+            const rgbaData = new Uint8Array(width * height * 4);
+            for (let i = 0; i < width * height; i++) {
+                const value = data[i] * 255;
+                rgbaData[i*4] = value;
+                rgbaData[i*4+1] = value;
+                rgbaData[i*4+2] = value;
+                rgbaData[i*4+3] = 255;
+            }
+            
+            gl.texImage2D(
+                gl.TEXTURE_2D, 0, gl.RGBA, 
+                width, height, 0, 
+                gl.RGBA, gl.UNSIGNED_BYTE, 
+                rgbaData
+            );
+        }
+        
+        render(time, loneliness) {
+            const gl = this.gl;
+            if (!gl || !this.program) return;
+            
+            gl.clearColor(0, 0, 0, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            
+            gl.useProgram(this.program);
+            
+            // Set uniforms
+            gl.uniform1f(this.uTime, time);
+            gl.uniform1f(this.uLoneliness, loneliness);
+            gl.uniform1i(this.uTexture, 0);
+            
+            // Draw
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+        
+        showFallbackMessage() {
+            const div = document.createElement('div');
+            div.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0,0,0,0.95);
+                color: #f64;
+                padding: 20px;
+                border-left: 3px solid #f64;
+                font-family: monospace;
+                text-align: center;
+                z-index: 2000;
+            `;
+            div.innerHTML = `
+                <h3>⚠️ WebGL Not Available</h3>
+                <p style="color:#ccc; margin:10px 0;">Your browser doesn't support WebGL.</p>
+                <p style="color:#f96; font-size:0.8rem;">Try Chrome or Firefox</p>
+            `;
+            document.body.appendChild(div);
+        }
+        
+        resize() {
+            const canvas = this.canvas;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            this.gl.viewport(0, 0, canvas.width, canvas.height);
+            if (this.uResolution) {
+                this.gl.uniform2f(this.uResolution, canvas.width, canvas.height);
+            }
         }
     }
     
-    // ========== INITIALIZE CA ==========
-    const ca = new CellularAutomata(CONFIG.gridWidth, CONFIG.gridHeight);
-    let metrics = ca.calculateMetrics();
-    
-    // Update UI with initial metrics
-    document.getElementById('population').textContent = metrics.population;
-    document.getElementById('rule-display').textContent = ca.rule;
-    
-    // ========== TEXTURE SETUP ==========
-    // Create data array for texture (RGBA format)
-    const textureWidth = ca.width;
-    const textureHeight = ca.height;
-    const data = new Uint8Array(textureWidth * textureHeight * 4);
-    
-    console.log('🖼️ Texture created:', { width: textureWidth, height: textureHeight, dataSize: data.length });
-    
-    // Create and configure texture
-    texture = new THREE.DataTexture(data, textureWidth, textureHeight, THREE.RGBAFormat);
-    texture.minFilter = THREE.NearestFilter;  // Crucial for pixel-perfect rendering
-    texture.magFilter = THREE.NearestFilter;
-    texture.needsUpdate = true;
-    
-    console.log('📦 Texture object:', texture);
-    
-    // ========== SHADER MATERIAL ==========
-    const vertexShader = `
-        varying vec2 vUv;
-        void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-    `;
-    
-    const fragmentShader = `
-        uniform sampler2D texture;
-        uniform float time;
-        uniform float loneliness;
-        varying vec2 vUv;
+    // ========== MAIN APPLICATION ==========
+    function init() {
+        DEBUG.init();
+        DEBUG.log('Brocken Noise CA initializing...');
         
-        void main() {
-            // Sample the texture (using nearest neighbor filtering)
-            vec4 cell = texture2D(texture, vUv);
+        // Configuration
+        const GRID_WIDTH = 128;
+        const GRID_HEIGHT = 72;
+        
+        // Initialize CA
+        const ca = new CellularAutomata(GRID_WIDTH, GRID_HEIGHT);
+        DEBUG.log(`CA created: ${GRID_WIDTH}x${GRID_HEIGHT}`);
+        
+        // Get canvas and create renderer
+        const canvas = document.getElementById('webgl-canvas');
+        const renderer = new WebGLRenderer(canvas, GRID_WIDTH, GRID_HEIGHT);
+        
+        if (!renderer.gl) {
+            DEBUG.error('Failed to initialize WebGL');
+            return;
+        }
+        
+        // Update texture with initial state
+        renderer.updateTexture(ca.grid, GRID_WIDTH, GRID_HEIGHT);
+        
+        // Animation variables
+        let lastUpdate = 0;
+        let targetFPS = 5;
+        let time = 0;
+        let loneliness = 0;
+        
+        // UI Elements
+        const ruleDisplay = document.getElementById('rule-display');
+        const ruleDisplayBottom = document.getElementById('rule-display-bottom');
+        const populationDisplay = document.getElementById('population');
+        const speedDisplay = document.getElementById('speed-display');
+        const speedDisplayBottom = document.getElementById('speed-display-bottom');
+        const speedSlider = document.getElementById('speed');
+        const randomBtn = document.getElementById('random-rule');
+        const resetBtn = document.getElementById('reset');
+        
+        // Update displays
+        ruleDisplay.textContent = ca.rule;
+        ruleDisplayBottom.textContent = ca.rule;
+        
+        // Animation loop
+        function animate(now) {
+            requestAnimationFrame(animate);
             
-            // cell.r > 0.5 means live cell (since we set R to 255 for live)
-            if (cell.r > 0.5) {
-                // Live cell - warm orange with subtle pulse
-                float pulse = 0.8 + 0.2 * sin(time * 3.0 + vUv.x * 20.0);
-                vec3 liveColor = vec3(1.0, 0.5, 0.2); // Orange
-                gl_FragColor = vec4(liveColor * pulse, 1.0);
+            // Update CA at controlled FPS
+            if (now - lastUpdate > 1000 / targetFPS) {
+                const metrics = ca.step();
+                renderer.updateTexture(ca.grid, GRID_WIDTH, GRID_HEIGHT);
                 
-                // Add slight glow at edges
-                vec2 gridPos = fract(vUv * vec2(128.0, 72.0));
-                if (gridPos.x < 0.05 || gridPos.x > 0.95 || gridPos.y < 0.05 || gridPos.y > 0.95) {
-                    gl_FragColor.rgb += vec3(0.3, 0.1, 0.0);
-                }
+                // Update UI
+                populationDisplay.textContent = metrics.population;
+                
+                // Calculate loneliness (simple version: dead cells / total)
+                const totalCells = GRID_WIDTH * GRID_HEIGHT;
+                loneliness = (totalCells - metrics.population) / totalCells;
+                
+                lastUpdate = now;
+            }
+            
+            // Render
+            time += 0.01;
+            renderer.render(time, loneliness);
+        }
+        
+        // Event listeners
+        randomBtn.addEventListener('click', () => {
+            const newRule = Math.floor(Math.random() * 256);
+            ca.setRule(newRule);
+            ruleDisplay.textContent = newRule;
+            ruleDisplayBottom.textContent = newRule;
+            DEBUG.log(`Rule changed to ${newRule}`);
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            ca.reset();
+            renderer.updateTexture(ca.grid, GRID_WIDTH, GRID_HEIGHT);
+            DEBUG.log('CA reset');
+        });
+        
+        speedSlider.addEventListener('input', (e) => {
+            targetFPS = parseInt(e.target.value);
+            speedDisplay.textContent = targetFPS;
+            speedDisplayBottom.textContent = targetFPS;
+        });
+        
+        window.addEventListener('resize', () => {
+            renderer.resize();
+        });
+        
+        // Handle visibility change (pause when tab not active)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                DEBUG.log('Tab hidden, pausing');
             } else {
-                // Dead cell - cold blue/black with loneliness influence
-                float intensity = 0.1 + loneliness * 0.4;
-                float flicker = 0.05 * sin(time * 5.0 + vUv.y * 30.0);
-                
-                // Grid lines
-                vec2 gridPos = fract(vUv * vec2(128.0, 72.0));
-                if (gridPos.x < 0.02 || gridPos.y < 0.02) {
-                    // Grid line color
-                    gl_FragColor = vec4(0.2, 0.1, 0.2, 1.0);
-                } else {
-                    // Dead cell color
-                    gl_FragColor = vec4(intensity + flicker, 0.0, 0.1, 1.0);
-                }
+                DEBUG.log('Tab visible, resuming');
             }
-        }
-    `;
+        });
+        
+        // Start animation
+        DEBUG.log('Starting animation loop');
+        animate(0);
+    }
     
-    material = new THREE.ShaderMaterial({
-        uniforms: {
-            texture: { value: texture },
-            time: { value: 0 },
-            loneliness: { value: 0 }
-        },
-        vertexShader: vertexShader,
-        fragmentShader: fragmentShader
-    });
-    
-    // Check for shader compilation errors
-    if (material.compilerErrors) {
-        console.error('❌ Shader compilation errors:', material.compilerErrors);
+    // Start when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
     } else {
-        console.log('✅ Shader compiled successfully');
+        init();
     }
-    
-    // ========== MESH ==========
-    const geometry = new THREE.PlaneGeometry(2, 2);
-    mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-    console.log('🎨 Mesh added to scene');
-    
-    // ========== UPDATE TEXTURE FUNCTION ==========
-    function updateTexture() {
-        const grid = ca.getGridData();
-        let liveCount = 0;
-        
-        // Fill texture data
-        for (let y = 0; y < textureHeight; y++) {
-            for (let x = 0; x < textureWidth; x++) {
-                const idx = y * textureWidth + x;
-                const cellState = grid[idx];
-                const texIdx = idx * 4;
-                
-                if (cellState === 1) {
-                    liveCount++;
-                    // Live cell: white (will be colored by shader)
-                    data[texIdx] = 255;     // R
-                    data[texIdx + 1] = 255; // G
-                    data[texIdx + 2] = 255; // B
-                } else {
-                    // Dead cell: black
-                    data[texIdx] = 0;        // R
-                    data[texIdx + 1] = 0;    // G
-                    data[texIdx + 2] = 0;    // B
-                }
-                data[texIdx + 3] = 255; // Alpha always full
-            }
-        }
-        
-        // Update texture
-        texture.needsUpdate = true;
-        
-        // Log occasionally for debugging
-        if (ca.generation % 30 === 0) {
-            console.log(`📊 Generation ${ca.generation}: ${liveCount} live cells`);
-        }
-        
-        return liveCount;
-    }
-    
-    // ========== ANIMATION LOOP ==========
-    let lastUpdate = 0;
-    let targetFPS = CONFIG.defaultFPS;
-    let frameCount = 0;
-    let lastLog = 0;
-    
-    function animate(time) {
-        requestAnimationFrame(animate);
-        
-        // Update CA at controlled FPS
-        if (time - lastUpdate > 1000 / targetFPS) {
-            metrics = ca.step();
-            const liveCount = updateTexture();
-            
-            // Update UI
-            document.getElementById('population').textContent = liveCount;
-            document.getElementById('speed-display').textContent = targetFPS;
-            
-            // Update shader uniform
-            material.uniforms.loneliness.value = metrics.loneliness;
-            
-            lastUpdate = time;
-            frameCount++;
-        }
-        
-        // Update time uniform for animations
-        material.uniforms.time.value = time / 1000;
-        
-        // Render
-        renderer.render(scene, camera);
-        
-        // FPS logging (every 60 frames)
-        if (time - lastLog > 1000) {
-            console.log(`🎬 Rendering at ~${frameCount}fps`);
-            frameCount = 0;
-            lastLog = time;
-        }
-    }
-    
-    // ========== EVENT LISTENERS ==========
-    document.getElementById('random-rule').addEventListener('click', () => {
-        const newRule = Math.floor(Math.random() * 256);
-        ca.setRule(newRule);
-        document.getElementById('rule-display').textContent = newRule;
-        console.log('🎲 Random rule selected:', newRule);
-    });
-    
-    document.getElementById('reset').addEventListener('click', () => {
-        ca.reset();
-        updateTexture();
-        console.log('🔄 CA reset');
-    });
-    
-    document.getElementById('speed').addEventListener('input', (e) => {
-        targetFPS = parseInt(e.target.value);
-        document.getElementById('speed-display').textContent = targetFPS;
-    });
-    
-    // Handle resize
-    window.addEventListener('resize', () => {
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-    });
-    
-    // ========== INITIAL UPDATE AND START ==========
-    console.log('🚀 Starting initial texture update...');
-    const initialLive = updateTexture();
-    console.log('✨ Initial live cells:', initialLive);
-    console.log('🎯 Animation loop starting...');
-    
-    // Start animation
-    animate(0);
-    
-    // Force a second update after a short delay to ensure texture is applied
-    setTimeout(() => {
-        updateTexture();
-        console.log('⏰ Delayed texture update complete');
-    }, 500);
 })();
