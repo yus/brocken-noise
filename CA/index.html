@@ -13,9 +13,20 @@
            Speed: <span id="speed-display">5</span>fps · 
            Population: <span id="population">0</span></p>
         <div id="controls">
-            <button id="random-rule">↻ Random Rule</button>
-            <button id="reset">⟲ Reset</button>
-            <input type="range" id="speed" min="1" max="30" value="5">
+            <div>
+                <button id="random-rule">↻ RANDOM RULE</button>
+                <button id="reset">⟲ RESET</button>
+            </div>
+    
+            <div class="slider-container">
+                <label>SPEED: <span id="speed-display">5</span> FPS</label>
+                <input type="range" id="speed" min="1" max="30" value="5">
+            </div>
+    
+            <!-- Optional: Add rule display here too -->
+            <div style="text-align: center; font-size: 0.8rem; opacity: 0.6;">
+                RULE: <span id="rule-display-bottom">110</span>
+            </div>
         </div>
     </div>
     
