@@ -5,14 +5,20 @@
     'use strict';
     
     // ========== DEBUG SYSTEM ==========
+    // ========== DEBUG SYSTEM ==========
     const DEBUG = {
         enabled: false,
         panel: document.getElementById('debug-panel'),
         logs: [],
         tapCount: 0,
         lastTap: 0,
-        
+
         init: function() {
+            // Ensure panel exists
+            if (!this.panel) {
+                this.panel = document.getElementById('debug-panel');
+            }
+
             document.addEventListener('touchend', (e) => {
                 const now = Date.now();
                 if (now - this.lastTap < 2000) {
@@ -21,30 +27,41 @@
                     this.tapCount = 1;
                 }
                 this.lastTap = now;
-                
+
                 if (this.tapCount >= 5) {
                     this.enabled = !this.enabled;
-                    this.panel.style.display = this.enabled ? 'block' : 'none';
+                    if (this.panel) {
+                        this.panel.style.display = this.enabled ? 'block' : 'none';
+                    }
                     this.log('🔍 Debug mode ' + (this.enabled ? 'ENABLED' : 'DISABLED'));
                     this.tapCount = 0;
                 }
             });
-            
+
             if (window.location.search.includes('debug=true')) {
                 this.enabled = true;
-                this.panel.style.display = 'block';
+                if (this.panel) {
+                    this.panel.style.display = 'block';
+                }
             }
+
+            // Now safe to log
+            this.log('🚀 DEBUG SYSTEM INITIALIZED');
+            this.log('WebGL canvas found: ' + (document.getElementById('webgl-canvas') ? '✅' : '❌'));
         },
-        
+
         log: function(msg) {
             console.log('[CA]', msg);
-            if (!this.enabled) return;
-            
-            this.logs.unshift('> ' + new Date().toLocaleTimeString() + ': ' + msg);
+            if (!this.enabled || !this.panel) return;
+
+            const timeStr = new Date().toLocaleTimeString();
+            this.logs.unshift(`> ${timeStr}: ${msg}`);
             if (this.logs.length > 10) this.logs.pop();
+
+            // Force panel update
             this.panel.innerHTML = '<h4>🔍 DEBUG</h4>' + this.logs.join('<br>');
         },
-        
+
         error: function(msg) {
             console.error('[CA]', msg);
             if (!this.enabled) return;
