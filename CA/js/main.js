@@ -450,7 +450,21 @@
                     vTexCoord = aPosition * 0.5 + 0.5;
                 }
             `;
-            
+
+            const fsSource = `
+                precision highp float;
+                varying vec2 vTexCoord;
+                uniform float uTime;
+    
+                void main() {
+                    // Just a simple moving gradient - NO texture dependency
+                    float r = sin(vTexCoord.x * 10.0 + uTime) * 0.5 + 0.5;
+                    float g = sin(vTexCoord.y * 10.0 + uTime * 1.3) * 0.5 + 0.5;
+                    float b = sin((vTexCoord.x + vTexCoord.y) * 10.0 + uTime * 1.7) * 0.5 + 0.5;
+                    gl_FragColor = vec4(r, g, b, 1.0);
+                }
+            `;
+            /*
             const fsSource = `
                 precision highp float;
                 
@@ -552,6 +566,7 @@
                     gl_FragColor = vec4(color, 1.0);
                 }
             `;
+            */
             
             // Compile shaders
             const vs = gl.createShader(gl.VERTEX_SHADER);
