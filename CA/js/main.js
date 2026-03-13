@@ -906,12 +906,6 @@
         
         DEBUG.log('Starting animation loop');
         animate(0);
-        // Force a redraw every frame regardless of CA update
-        function forceRender() {
-            renderer.render(time, ca.calculateMetrics());
-            requestAnimationFrame(forceRender);
-        }
-        forceRender();
     }
     
     // Start
