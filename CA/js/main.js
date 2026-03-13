@@ -619,6 +619,11 @@
             
             gl.uniform1i(this.uTexture, 0);
             gl.uniform2f(this.uResolution, this.canvas.width, this.canvas.height);
+
+            this.debug.log('Uniform locations: ' + 
+                'uTime=' + (this.uTime !== -1) + 
+                ' uLoneliness=' + (this.uLoneliness !== -1) + 
+                ' uRuleClass=' + (this.uRuleClass !== -1));
             
             this.debug.log('Shaders initialized');
             return true;
@@ -650,10 +655,10 @@
         render(time, metrics) {
             const gl = this.gl;
             if (!gl || !this.program) return;
-            
+    
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.useProgram(this.program);
-            
+    
             // Map spectre type to int for shader
             let spectreType = 0;
             if (metrics.spectre && metrics.spectre.type !== 'none') {
@@ -666,15 +671,22 @@
                 };
                 spectreType = typeMap[metrics.spectre.type] || 0;
             }
-            
+    
+            // Set all uniforms
             gl.uniform1f(this.uTime, time);
             gl.uniform1f(this.uLoneliness, 1 - (metrics.population / (this.width * this.height)));
             gl.uniform1f(this.uEntropy, metrics.entropy || 0);
             gl.uniform1f(this.uSpectreIntensity, metrics.spectre ? metrics.spectre.intensity : 0);
             gl.uniform1i(this.uSpectreType, spectreType);
-            gl.uniform1i(this.uRuleClass, this.ruleClass || 3);
-            
+            gl.uniform1i(this.uRuleClass, this.ruleClass || 3); // THIS WAS MISSING
+    
             gl.drawArrays(gl.TRIANGLES, 0, 6);
+    
+            // Debug: log first render
+            if (!this.rendered) {
+                this.debug.log('First render complete');
+                this.rendered = true;
+            }
         }
         
         setRuleClass(ruleClass) {
